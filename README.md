@@ -1,10 +1,11 @@
 # ESG and Investment Data Management System
 
-The **ESG and Investment Data Management System** is a Python-based solution designed to manage and integrate ESG (Environmental, Social, and Governance) and Investment data. The system provides efficient ETL (Extract, Transform, Load) processes to ensure clean, validated, and reliable data is available for analysis, reporting, and decision-making. This tool supports financial institutions and organizations focused on sustainability and compliance.
+**ESG and Investment Data Management System** is a AI and Data management-based solution designed to manage and integrate ESG (Environmental, Social, and Governance) and Investment data. The system 	ports financial institutions and organizations focused on sustainability and compliance.
 
 ---
 
 ## Key Features
+
 - **Comprehensive ESG and Investment Integration**: Combines ESG metrics with investment data to facilitate informed decision-making.
 - **Data Validation and Transformation**: Ensures high-quality, clean, and consistent data.
 - **SQL Server Database Integration**: Creates and populates ESG and Investment tables in a secure SQL Server environment.
