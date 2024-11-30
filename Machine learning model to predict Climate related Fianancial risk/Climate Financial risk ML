@@ -1,0 +1,184 @@
+import pandas as pd
+import pyodbc
+
+############### SQL Server connection setup (use trusted connection)#############################
+def connect_to_sql_server():
+    conn_str = r'DRIVER={ODBC Driver 17 for SQL Server};SERVER=localhost\\SQLEXPRESS;DATABASE=Investment_ESG_DB;Trusted_Connection=yes;'
+    conn = pyodbc.connect(conn_str)
+    return conn
+
+########################## Function to load data from views############################
+def load_data(conn):
+    # Example query to load the climate financial risk data
+    df = pd.read_sql("SELECT * FROM [dbo].[VW_Climate_Financial_Risk_Report]", conn)
+    return df
+
+
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import LabelEncoder
+
+########################## Data Preprocessing####################################
+def preprocess_data(df):
+    # Handle missing values (example: fill with median)
+    df.fillna(df.median(), inplace=True)
+
+    # Encode categorical features (e.g., Risk_Level)
+    label_encoder = LabelEncoder()
+    df['Risk_Level'] = label_encoder.fit_transform(df['Risk_Level'])  # Convert Low=0, Medium=1, High=2
+
+    # Scale continuous features (e.g., Carbon_Emissions_Score, Investment_Amount)
+    scaler = StandardScaler()
+    df[['Carbon_Emissions_Score', 'Investment_Amount']] = scaler.fit_transform(df[['Carbon_Emissions_Score', 'Investment_Amount']])
+
+    # Select the features (X) and target (y)
+    X = df[['Carbon_Emissions_Score', 'Investment_Amount', 'Sustainability_Score']]  # Example features
+    y = df['Risk_Level']  # Target variable (Risk Level)
+
+    # Split the data into training and testing sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    return X_train, X_test, y_train, y_test
+
+
+
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
+
+##################### Train a Random Forest Classifier###########################################
+def train_random_forest(X_train, y_train):
+    # Initialize the model
+    rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
+    
+    # Train the model
+    rf_model.fit(X_train, y_train)
+    
+    return rf_model
+
+
+
+###################### Evaluate the model###########################################################
+def evaluate_model(rf_model, X_test, y_test):
+    # Predict the Risk Level for the test set
+    y_pred = rf_model.predict(X_test)
+
+    # Print out classification metrics
+    print("Accuracy:", accuracy_score(y_test, y_pred))
+    print("Classification Report:")
+    print(classification_report(y_test, y_pred))
+    print("Confusion Matrix:")
+	
+	
+	
+	
+	
+	
+#################################1. Automate Data Ingestion#######################################
+Collect Daily Data: Ensure that the new data required for predictions (e.g., ESG metrics, financial indicators) is available in your database or a file storage system.
+ETL Process: Use an automated ETL (Extract, Transform, Load) pipeline to preprocess daily data:
+Extract data from SQL Server or another data source.
+Transform data (e.g., feature engineering, scaling) to match the format used during model training.
+Load the preprocessed data into a format (like a CSV file or DataFrame) for the model to consume.
+
+
+
+
+#########################2. Deploy the Model###############################################
+Export the Model:
+
+Save the trained model using a library like joblib or pickle:
+import joblib
+joblib.dump(model, 'climate_risk_model.pkl')
+
+
+Store the model in a secure location (e.g., server, cloud storage).
+
+
+Load the Model:
+
+On a daily basis, load the model:
+model = joblib.load('climate_risk_model.pkl')
+
+
+
+Predict:
+Use the model to predict outcomes for the new data:
+predictions = model.predict(new_data)
+
+
+
+
+####################3. Integrate into a Workflow################################
+Set up an API:
+
+Deploy the model as a REST API using frameworks like Flask or FastAPI:
+
+
+from flask import Flask, request, jsonify
+import joblib
+import pandas as pd
+
+app = Flask(__name__)
+model = joblib.load('climate_risk_model.pkl')
+
+@app.route('/predict', methods=['POST'])
+def predict():
+    data = request.json  # Expect JSON data
+    input_df = pd.DataFrame(data)
+    predictions = model.predict(input_df)
+    return jsonify(predictions.tolist())
+
+if __name__ == '__main__':
+    app.run(debug=True)
+This allows other systems to send data and receive predictions in real-time.
+Daily Batch Process:
+Use a script scheduled with cron jobs (Linux/Mac) or Task Scheduler (Windows) to run the prediction script daily.
+
+
+
+
+############################4. Store Predictions######################################
+Save daily predictions in a database for further analysis and reporting:
+import pyodbc
+
+conn = pyodbc.connect(conn_str)
+cursor = conn.cursor()
+
+for idx, prediction in enumerate(predictions):
+    cursor.execute("INSERT INTO Predictions (Date, Prediction) VALUES (?, ?)", (date, prediction))
+conn.commit()
+conn.close()
+
+
+
+
+
+###############################5. Monitor and Update the Model####################################
+Model Monitoring:
+
+Track model performance regularly using a dashboard (e.g., Tableau, Power BI) or by logging metrics (accuracy, prediction trends).
+Evaluate whether the model remains accurate over time or if retraining is required.
+Retrain with New Data:
+
+Automate the retraining process periodically (e.g., monthly) with the latest data to ensure the model stays updated.
+
+
+
+
+##################################6. Notify Stakeholders#####################################################
+Send daily reports or alerts with predictions using tools like email notifications (via Python's smtplib) or integration with Slack/Teams.
+Example Daily Workflow
+Morning:
+
+Automatically collect and preprocess new data.
+Run predictions using the trained model.
+Save predictions to the database.
+Afternoon:
+
+Generate insights and send reports to stakeholders.
+Update dashboards with the latest predictions.
+Weekly/Monthly:
+
+Retrain the model with new data if necessary.

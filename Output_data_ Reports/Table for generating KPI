@@ -1,0 +1,290 @@
+
+########### Create a Table for Combined ESG and Investment Data ##############
+
+
+IF OBJECT_ID('dbo.Combined_ESG_Investment_Data', 'U') IS NOT NULL
+    DROP TABLE dbo.Combined_ESG_Investment_Data;
+
+CREATE TABLE dbo.Combined_ESG_Investment_Data (
+    Company NVARCHAR(255),
+    Financial_Instrument NVARCHAR(255),
+    Stock_Exchange NVARCHAR(255),
+    Investment_Amount DECIMAL(18, 2),
+    Currency NVARCHAR(50),
+    Investment_Date DATE,
+    Investment_Amount_USD DECIMAL(18, 2),
+    Carbon_Emissions_Score DECIMAL(5, 2),
+    Community_Engagement_Score DECIMAL(5, 2),
+    Cybersecurity_Score DECIMAL(5, 2),
+    Diversity_Equity_Inclusion_Score DECIMAL(5, 2),
+    ESG_Disclosure_Score DECIMAL(5, 2),
+    Energy_Efficiency_Score DECIMAL(5, 2),
+    Governance_Score DECIMAL(5, 2),
+    Human_Rights_Score DECIMAL(5, 2),
+    Labor_Practices_Score DECIMAL(5, 2),
+    Renewable_Energy_Percentage DECIMAL(5, 2),
+    Sustainable_Products_Score DECIMAL(5, 2),
+    Transparency_Score DECIMAL(5, 2),
+    Waste_Management_Score DECIMAL(5, 2),
+    Water_Usage DECIMAL(18, 2),
+    Carbon_Intensity_per_Million_Invested DECIMAL(18, 2)
+);
+
+
+
+########### Insert the combined data into the newly created table###########
+
+
+INSERT INTO dbo.Combined_ESG_Investment_Data
+SELECT 
+    i.Company,
+    i.Financial_Instrument,
+    i.Stock_Exchange,
+    i.Investment_Amount,
+    i.Currency,
+    i.Investment_Date,
+    i.Investment_Amount * e.ExchangeRate AS Investment_Amount_USD, 
+    esg.Carbon_Emissions_Score,
+    esg.Community_Engagement_Score,
+    esg.Cybersecurity_Score,
+    esg.Diversity_Equity_Inclusion_Score,
+    esg.ESG_Disclosure_Score,
+    esg.Energy_Efficiency_Score,
+    esg.Governance_Score,
+    esg.Human_Rights_Score,
+    esg.Labor_Practices_Score,
+    esg.Renewable_Energy_Percentage,
+    esg.Sustainable_Products_Score,
+    esg.Transparency_Score,
+    esg.Waste_Management_Score,
+    esg.Water_Usage,
+    (esg.Carbon_Emissions_Score / (i.Investment_Amount * e.ExchangeRate)) * 1000 AS Carbon_Intensity_per_Million_Invested
+FROM [Investment_ESG_DB].[dbo].[Investment_DATA] i
+JOIN [Investment_ESG_DB].[dbo].[ESG_DATA] esg ON i.Company = esg.Company
+
+
+
+
+#########Create View for Sustainability Reporting (ESG & Financial Metrics)#############
+
+
+-- Create a view for Summarized Sustainability Reporting by Company: Averages and Totals
+CREATE VIEW [dbo].[VW_Sustainability_Summarized_Report] AS
+SELECT 
+    ESG.Company,
+    AVG(ESG.Carbon_Emissions_Score) AS Avg_Carbon_Emissions_Score,
+    AVG(ESG.Community_Engagement_Score) AS Avg_Community_Engagement_Score,
+    AVG(ESG.Cybersecurity_Score) AS Avg_Cybersecurity_Score,
+    AVG(ESG.Diversity_Equity_Inclusion_Score) AS Avg_Diversity_Equity_Inclusion_Score,
+    SUM(Investment.Investment_Amount) AS Total_Investment_Amount,
+    COUNT(DISTINCT Investment.Financial_Instrument) AS Unique_Financial_Instruments
+FROM [Investment_ESG_DB].[dbo].[ESG_DATA] ESG
+JOIN [Investment_ESG_DB].[dbo].[Investment_DATA] Investment
+    ON ESG.Company = Investment.Company
+WHERE Investment.Investment_Date > '2023-01-03'  -- Filter for investments after January 3, 2023
+--WHERE ESG.Company BETWEEN 'Company1' AND 'Company100'  -- Optional filter for specific companies
+GROUP BY ESG.Company
+;
+
+select * from [dbo].[VW_Sustainability_Summarized_Report];
+
+   
+   
+#########################Create View for Investment Risk Analysis (Assessing ESG Risks)#############################
+
+
+
+-- Create a view for Investment Risk Analysis Report
+CREATE VIEW [dbo].[VW_Investment_Risk_Analysis_Report] AS
+SELECT 
+    ESG.Company,
+    AVG(ESG.Carbon_Emissions_Score) AS Avg_Carbon_Emissions_Score,
+    AVG(ESG.Governance_Score) AS Avg_Governance_Score,
+    AVG(ESG.Transparency_Score) AS Avg_Transparency_Score,
+    AVG(ESG.Waste_Management_Score) AS Avg_Waste_Management_Score,
+    SUM(Investment.Investment_Amount) AS Total_Investment_Amount,
+    COUNT(DISTINCT Investment.Financial_Instrument) AS Unique_Financial_Instruments,
+    COUNT(DISTINCT Investment.Stock_Exchange) AS Unique_Stock_Exchanges,
+    CASE
+        WHEN AVG(ESG.Carbon_Emissions_Score) > 70 THEN 'High Risk'
+        WHEN AVG(ESG.Carbon_Emissions_Score) BETWEEN 50 AND 70 THEN 'Moderate Risk'
+        ELSE 'Low Risk'
+    END AS Carbon_Risk_Level,
+    CASE
+        WHEN AVG(ESG.Governance_Score) < 60 THEN 'High Risk'
+        WHEN AVG(ESG.Governance_Score) BETWEEN 60 AND 80 THEN 'Moderate Risk'
+        ELSE 'Low Risk'
+    END AS Governance_Risk_Level,
+    CASE
+        WHEN AVG(ESG.Transparency_Score) < 60 THEN 'High Risk'
+        WHEN AVG(ESG.Transparency_Score) BETWEEN 60 AND 80 THEN 'Moderate Risk'
+        ELSE 'Low Risk'
+    END AS Transparency_Risk_Level
+FROM [Investment_ESG_DB].[dbo].[ESG_DATA] ESG
+JOIN [Investment_ESG_DB].[dbo].[Investment_DATA] Investment
+    ON ESG.Company = Investment.Company
+WHERE Investment.Investment_Date > '2023-01-03'  -- Filter for investments after January 3, 2023
+--WHERE ESG.Company BETWEEN 'Company1' AND 'Company25'  -- Optional filter for specific companies
+GROUP BY ESG.Company
+;
+
+
+select * from [dbo].[VW_Investment_Risk_Analysis_Report]
+
+
+
+###########Create View for Equity and Inclusion Report##########################
+
+
+CREATE VIEW [dbo].[VW_Equity_Inclusion_Report] AS
+SELECT 
+    ESG.Company,
+    AVG(ESG.Diversity_Equity_Inclusion_Score) AS Avg_Diversity_Equity_Inclusion_Score,
+    AVG(ESG.Human_Rights_Score) AS Avg_Human_Rights_Score,
+    AVG(ESG.Labor_Practices_Score) AS Avg_Labor_Practices_Score,
+    AVG(ESG.Water_Usage) AS Avg_Water_Usage,  -- Including water usage as an additional sustainability metric
+    SUM(Investment.Investment_Amount) AS Total_Investment_Amount,
+    COUNT(DISTINCT Investment.Financial_Instrument) AS Unique_Financial_Instruments,
+    COUNT(DISTINCT Investment.Stock_Exchange) AS Unique_Stock_Exchanges,
+    CASE
+        WHEN AVG(ESG.Diversity_Equity_Inclusion_Score) > 70 THEN 'High Inclusion'
+        WHEN AVG(ESG.Diversity_Equity_Inclusion_Score) BETWEEN 50 AND 70 THEN 'Moderate Inclusion'
+        ELSE 'Low Inclusion'
+    END AS Diversity_Inclusion_Level,
+    CASE
+        WHEN AVG(ESG.Human_Rights_Score) < 60 THEN 'High Risk'
+        WHEN AVG(ESG.Human_Rights_Score) BETWEEN 60 AND 80 THEN 'Moderate Risk'
+        ELSE 'Low Risk'
+    END AS Human_Rights_Risk_Level,
+    CASE
+        WHEN AVG(ESG.Labor_Practices_Score) < 60 THEN 'High Risk'
+        WHEN AVG(ESG.Labor_Practices_Score) BETWEEN 60 AND 80 THEN 'Moderate Risk'
+        ELSE 'Low Risk'
+    END AS Labor_Practices_Risk_Level
+FROM [Investment_ESG_DB].[dbo].[ESG_DATA] ESG
+JOIN [Investment_ESG_DB].[dbo].[Investment_DATA] Investment
+    ON ESG.Company = Investment.Company
+WHERE Investment.Investment_Date > '2023-01-03'  -- Filter for investments after January 3, 2023
+--WHERE ESG.Company BETWEEN 'Company1' AND 'Company25'  -- Optional filter for specific companies
+GROUP BY ESG.Company
+;
+
+select * from [dbo].[VW_Equity_Inclusion_Report]
+
+
+
+ 
+ ##################Create View for Carbon Footprint Reduction Report ###################
+ 
+ 
+CREATE VIEW [dbo].[VW_Carbon_Footprint_Reduction_Report] AS
+SELECT 
+    ESG.Company,
+    AVG(ESG.Carbon_Emissions_Score) AS Avg_Carbon_Emissions_Score,
+    SUM(Investment.Investment_Amount) AS Total_Investment_Amount,
+    COUNT(DISTINCT Investment.Financial_Instrument) AS Unique_Financial_Instruments,
+    COUNT(DISTINCT Investment.Stock_Exchange) AS Unique_Stock_Exchanges,
+    CASE
+        WHEN AVG(ESG.Carbon_Emissions_Score) > 70 THEN 'High Carbon Footprint'
+        WHEN AVG(ESG.Carbon_Emissions_Score) BETWEEN 50 AND 70 THEN 'Moderate Carbon Footprint'
+        ELSE 'Low Carbon Footprint'
+    END AS Carbon_Footprint_Level,
+    CASE
+        WHEN AVG(ESG.Carbon_Emissions_Score) > 70 THEN 'High Risk'
+        WHEN AVG(ESG.Carbon_Emissions_Score) BETWEEN 50 AND 70 THEN 'Moderate Risk'
+        ELSE 'Low Risk'
+    END AS Carbon_Risk_Level,
+    SUM(CASE
+        WHEN Investment.Financial_Instrument IN ('Renewable Energy', 'Low-Carbon Technologies') THEN Investment.Investment_Amount
+        ELSE 0
+    END) AS Total_Sustainable_Investment_Amount,
+    COUNT(DISTINCT CASE
+        WHEN Investment.Financial_Instrument IN ('Renewable Energy', 'Low-Carbon Technologies') THEN Investment.Financial_Instrument
+        ELSE NULL
+    END) AS Unique_Sustainable_Financial_Instruments
+FROM [Investment_ESG_DB].[dbo].[ESG_DATA] ESG
+JOIN [Investment_ESG_DB].[dbo].[Investment_DATA] Investment
+    ON ESG.Company = Investment.Company
+WHERE Investment.Investment_Date > '2023-01-01'  -- Filter for investments after January 1, 2023
+GROUP BY ESG.Company
+;
+
+select * from [dbo].[VW_Carbon_Footprint_Reduction_Report]
+
+
+
+
+##################Create View for Climate Financial Risk Report##################
+
+
+CREATE VIEW [dbo].[VW_Climate_Financial_Risk_Report_] AS
+SELECT 
+    ESG.Company,
+    AVG(ESG.Carbon_Emissions_Score) AS Avg_Carbon_Emissions_Score,
+    AVG(ESG.Governance_Score) AS Avg_Governance_Score,
+    AVG(ESG.Transparency_Score) AS Avg_Transparency_Score,
+    SUM(Investment.Investment_Amount) AS Total_Investment_Amount,
+    COUNT(DISTINCT Investment.Financial_Instrument) AS Unique_Financial_Instruments,
+    COUNT(DISTINCT Investment.Stock_Exchange) AS Unique_Stock_Exchanges,
+    
+    -- Physical Climate Risk (Assumed score based on ESG Data or other risk ratings)
+    CASE
+        WHEN AVG(ESG.Carbon_Emissions_Score) > 70 THEN 'High Physical Risk'
+        WHEN AVG(ESG.Carbon_Emissions_Score) BETWEEN 50 AND 70 THEN 'Moderate Physical Risk'
+        ELSE 'Low Physical Risk'
+    END AS Physical_Risk_Level,
+
+    -- Transition Risk (Assumed transition risk score or based on exposure to carbon-heavy industries)
+    CASE
+        WHEN AVG(ESG.Carbon_Emissions_Score) > 70 THEN 'High Transition Risk'
+        WHEN AVG(ESG.Carbon_Emissions_Score) BETWEEN 50 AND 70 THEN 'Moderate Transition Risk'
+        ELSE 'Low Transition Risk'
+    END AS Transition_Risk_Level,
+
+    -- Total Investment Exposure to Climate Risk (Investments in High Carbon and Renewable sectors)
+    SUM(CASE
+        WHEN Investment.Financial_Instrument IN ('Fossil Fuels', 'High-Carbon Sectors') THEN Investment.Investment_Amount
+        ELSE 0
+    END) AS Total_Fossil_Fuel_Investment_Amount,
+
+    SUM(CASE
+        WHEN Investment.Financial_Instrument IN ('Renewable Energy', 'Low-Carbon Technologies') THEN Investment.Investment_Amount
+        ELSE 0
+    END) AS Total_Renewable_Energy_Investment_Amount,
+
+    -- Potential Financial Impact (This could be adjusted based on risk factors, for simplicity assume risk-to-revenue impact)
+    SUM(CASE
+        WHEN Investment.Financial_Instrument IN ('Fossil Fuels', 'High-Carbon Sectors') THEN Investment.Investment_Amount * 0.25  -- 25% potential loss due to risk exposure
+        ELSE 0
+    END) AS Potential_Loss_from_Fossil_Fuels
+FROM [Investment_ESG_DB].[dbo].[ESG_DATA] ESG
+JOIN [Investment_ESG_DB].[dbo].[Investment_DATA] Investment
+    ON ESG.Company = Investment.Company
+WHERE Investment.Investment_Date > '2020-01-01'  -- Filter for investments after January 1, 2023
+GROUP BY ESG.Company
+;
+
+
+select * from [dbo].[VW_Climate_Financial_Risk_Report_];
+
+
+
+
+
+
+
+
+
+ 
+ ########Not neededd#####
+ 
+ SELECT * into [Investment_ESG_DB].[dbo].[Distinct_Investment_Risk_Analysis_50_Companies]
+from  master.[dbo].[Distinct_Investment_Risk_Analysis_50_Companies];
+
+
+SELECT * into [Investment_ESG_DB].[dbo].[Distinct_Sustainability_Reporting_50_Companies]
+from  master.[dbo].[Distinct_Sustainability_Reporting_50_Companies];
+
+
+SELECT * into [Investment_ESG_DB].[dbo].[Distinct_VW_Sustainability_Reporting_50_Companies]
+from  master.[dbo].[Distinct_VW_Sustainability_Reporting_50_Companies];

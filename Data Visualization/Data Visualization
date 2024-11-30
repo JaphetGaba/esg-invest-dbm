@@ -1,0 +1,194 @@
+
+
+
+
+
+#########################Visualization of report############################################
+
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import pyodbc
+
+# SQL Server connection setup (use trusted connection)
+def connect_to_sql_server():
+    try:
+        conn_str = r'DRIVER={ODBC Driver 17 for SQL Server};SERVER=localhost\SQLEXPRESS;DATABASE=Investment_ESG_DB;Trusted_Connection=yes;'
+        conn = pyodbc.connect(conn_str)
+        print("Connection successful!")
+        return conn
+    except Exception as e:
+        print(f"Error connecting to SQL Server: {e}")
+        return None
+    
+# Function to load data for each report
+def load_data(conn):
+    # Loading data from SQL views
+    df_carbon = pd.read_sql("SELECT * FROM [dbo].[VW_Carbon_Footprint_Reduction_Report]", conn)
+    df_climate_risk = pd.read_sql("SELECT * FROM [dbo].[VW_Climate_Financial_Risk_Report]", conn)
+    df_equity_inclusion = pd.read_sql("SELECT * FROM [dbo].[VW_Equity_Inclusion_Report]", conn)
+    df_investment_risk = pd.read_sql("SELECT * FROM [dbo].[VW_Investment_Risk_Analysis_Report]", conn)
+    
+    return df_carbon, df_climate_risk, df_equity_inclusion, df_investment_risk
+
+# 1. Carbon Footprint Reduction Report Visualizations
+def plot_carbon_footprint_detailed(df):
+    print("Generating Carbon Footprint Reduction Report Visualizations...")
+    
+    # Print the first few rows of the dataframe for debugging
+    print(df.head())
+    
+    # Check if the required column exists
+    if 'Carbon_Emissions_Score' in df.columns:
+        plt.figure(figsize=(10, 6))
+        sns.histplot(df['Carbon_Emissions_Score'], kde=True, color='blue')
+        plt.title('Distribution of Carbon Emissions Scores')
+        plt.xlabel('Carbon Emissions Score')
+        plt.ylabel('Frequency')
+        plt.show()
+    else:
+        print("Column 'Carbon_Emissions_Score' not found in data.")
+
+    # Check if the required columns exist
+    if 'Carbon_Emissions_Score' in df.columns and 'Carbon_Reduction_Target' in df.columns:
+        plt.figure(figsize=(12, 6))
+        sns.scatterplot(x='Carbon_Emissions_Score', y='Carbon_Reduction_Target', data=df, hue='Risk_Level', palette='coolwarm')
+        plt.title('Carbon Emissions vs Carbon Reduction Target by Company')
+        plt.xlabel('Carbon Emissions Score')
+        plt.ylabel('Carbon Reduction Target')
+        plt.legend(title='Risk Level')
+        plt.show()
+
+    # Check if the required columns exist
+    if 'Risk_Level' in df.columns and 'Investment_Amount' in df.columns:
+        plt.figure(figsize=(12, 6))
+        sns.boxplot(x='Risk_Level', y='Investment_Amount', data=df, palette='coolwarm')
+        plt.title('Investment Amount by Carbon Risk Level')
+        plt.xlabel('Carbon Risk Level')
+        plt.ylabel('Investment Amount')
+        plt.show()
+
+# 2. Climate Financial Risk Report Visualizations
+def plot_climate_financial_risk_detailed(df):
+    print("Generating Climate Financial Risk Report Visualizations...")
+    
+    # Print the first few rows of the dataframe for debugging
+    print(df.head())
+    
+    # Check if the required columns exist
+    if 'Carbon_Emissions_Score' in df.columns and 'Investment_Risk_Score' in df.columns:
+        plt.figure(figsize=(12, 6))
+        sns.scatterplot(x='Carbon_Emissions_Score', y='Investment_Risk_Score', data=df, hue='Risk_Level', palette='coolwarm')
+        plt.title('Carbon Emissions vs Investment Risk Score')
+        plt.xlabel('Carbon Emissions Score')
+        plt.ylabel('Investment Risk Score')
+        plt.legend(title='Risk Level')
+        plt.show()
+
+    # Check if the required columns exist
+    if 'Risk_Level' in df.columns and 'Investment_Amount' in df.columns:
+        plt.figure(figsize=(12, 6))
+        sns.boxplot(x='Risk_Level', y='Investment_Amount', data=df, palette='coolwarm')
+        plt.title('Investment Amount by Risk Level')
+        plt.xlabel('Risk Level')
+        plt.ylabel('Investment Amount')
+        plt.show()
+
+    # Check if the required columns exist for correlation
+    if 'Carbon_Emissions_Score' in df.columns and 'Investment_Risk_Score' in df.columns and 'Investment_Amount' in df.columns:
+        corr_matrix = df[['Carbon_Emissions_Score', 'Investment_Risk_Score', 'Investment_Amount']].corr()
+        plt.figure(figsize=(8, 6))
+        sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt='.2f', linewidths=0.5)
+        plt.title('Correlation Matrix')
+        plt.show()
+
+# 3. Equity and Inclusion Report Visualizations
+def plot_equity_inclusion_detailed(df):
+    print("Generating Equity and Inclusion Report Visualizations...")
+    
+    # Print the first few rows of the dataframe for debugging
+    print(df.head())
+    
+    # Check if the required columns exist
+    if 'Diversity_Equity_Inclusion_Score' in df.columns and 'Investment_Amount' in df.columns:
+        plt.figure(figsize=(12, 6))
+        sns.scatterplot(x='Diversity_Equity_Inclusion_Score', y='Investment_Amount', data=df, hue='Company', palette='tab20')
+        plt.title('Diversity, Equity, and Inclusion vs Investment Amount')
+        plt.xlabel('Diversity, Equity, and Inclusion Score')
+        plt.ylabel('Investment Amount')
+        plt.show()
+
+    # Check if the required columns exist
+    if 'Company' in df.columns and 'Diversity_Equity_Inclusion_Score' in df.columns:
+        plt.figure(figsize=(12, 6))
+        sns.boxplot(x='Company', y='Diversity_Equity_Inclusion_Score', data=df, palette='Set2')
+        plt.title('Diversity, Equity, and Inclusion Scores by Company')
+        plt.xlabel('Company')
+        plt.ylabel('Diversity, Equity, and Inclusion Score')
+        plt.xticks(rotation=45)
+        plt.show()
+
+    # Check if the required column exists
+    if 'Diversity_Equity_Inclusion_Score' in df.columns:
+        plt.figure(figsize=(10, 6))
+        sns.histplot(df['Diversity_Equity_Inclusion_Score'], kde=True, color='green')
+        plt.title('Distribution of Diversity, Equity, and Inclusion Scores')
+        plt.xlabel('Diversity, Equity, and Inclusion Score')
+        plt.ylabel('Frequency')
+        plt.show()
+
+# 4. Investment Risk Analysis Report Visualizations
+def plot_investment_risk_analysis_detailed(df):
+    print("Generating Investment Risk Analysis Report Visualizations...")
+    
+    # Print the first few rows of the dataframe for debugging
+    print(df.head())
+    
+    # Check if the required columns exist
+    if 'Risk_Level' in df.columns and 'Total_Investment_Amount' in df.columns:
+        plt.figure(figsize=(12, 6))
+        sns.boxplot(x='Risk_Level', y='Total_Investment_Amount', data=df, palette='muted')
+        plt.title('Investment Amount by Risk Level')
+        plt.xlabel('Risk Level')
+        plt.ylabel('Total Investment Amount')
+        plt.show()
+
+    # Check if the required columns exist
+    if 'Risk_Level' in df.columns and 'Unique_Financial_Instruments' in df.columns:
+        plt.figure(figsize=(12, 6))
+        sns.barplot(x='Risk_Level', y='Unique_Financial_Instruments', data=df, palette='coolwarm')
+        plt.title('Unique Financial Instruments by Risk Level')
+        plt.xlabel('Risk Level')
+        plt.ylabel('Unique Financial Instruments')
+        plt.show()
+
+    # Check if the required columns exist
+    if 'Company' in df.columns and 'Unique_Stock_Exchanges' in df.columns:
+        plt.figure(figsize=(12, 6))
+        sns.barplot(x='Company', y='Unique_Stock_Exchanges', data=df, palette='Set1')
+        plt.title('Unique Stock Exchanges by Company')
+        plt.xlabel('Company')
+        plt.ylabel('Unique Stock Exchanges')
+        plt.xticks(rotation=45)
+        plt.show()
+
+# Main function to execute all visualizations
+def create_all_visualizations():
+    # Connect to the SQL Server
+    conn = connect_to_sql_server()
+
+    # Load data from all reports
+    df_carbon, df_climate_risk, df_equity_inclusion, df_investment_risk = load_data(conn)
+
+    # Generate visualizations for each report
+    
+    plot_investment_risk_analysis_detailed(df_investment_risk)
+    plot_carbon_footprint_detailed(df_carbon)
+     plot_climate_financial_risk_detailed(df_climate_risk)
+    plot_equity_inclusion_detailed(df_equity_inclusion)
+
+   
+# Run the function to generate all visualizations
+create_all_visualizations()
+
